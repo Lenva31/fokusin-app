@@ -1,100 +1,140 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 function App() {
-  const [tasks, setTasks] = useState(() => {
-    const stored = localStorage.getItem('fokusin-tasks');
-    return stored ? JSON.parse(stored) : [];
-  });
-  const [taskName, setTaskName] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [tasks, setTasks] = useState([]);
+  const [newTask, setNewTask] = useState("");
+  const [priority, setPriority] = useState("Sedang");
+  const [date, setDate] = useState("");
 
   useEffect(() => {
-    const interval = setInterval(() => setTasks([...tasks]), 1000);
-    return () => clearInterval(interval);
-  }, [tasks]);
+    const savedTasks = localStorage.getItem("tasks");
+    if (savedTasks) {
+      setTasks(JSON.parse(savedTasks));
+    }
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem('fokusin-tasks', JSON.stringify(tasks));
+    localStorage.setItem("tasks", JSON.stringify(tasks));
   }, [tasks]);
 
   const addTask = () => {
-    if (!taskName || !deadline) return;
-    setTasks([...tasks, { id: Date.now(), name: taskName, deadline, completed: false }]);
-    setTaskName('');
-    setDeadline('');
+    if (newTask.trim() === "" || date === "") return;
+
+    const newItem = {
+      name: newTask,
+      priority: priority,
+      date: date,
+      done: false,
+    };
+
+    setTasks([...tasks, newItem]);
+    setNewTask("");
+    setDate("");
   };
 
-  const toggleComplete = (id) => {
-    setTasks(tasks.map(task =>
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+  const toggleDone = (index) => {
+    const updated = [...tasks];
+    updated[index].done = !updated[index].done;
+    setTasks(updated);
   };
 
-  const deleteTask = (id) => {
-    setTasks(tasks.filter(task => task.id !== id));
-  };
-
-  const getCountdown = (deadline) => {
-    const distance = new Date(deadline) - new Date();
-    if (distance < 0) return 'Expired';
-    const d = Math.floor(distance / (1000 * 60 * 60 * 24));
-    const h = Math.floor((distance / (1000 * 60 * 60)) % 24);
-    const m = Math.floor((distance / (1000 * 60)) % 60);
-    const s = Math.floor((distance / 1000) % 60);
-    return `${d}d ${h}h ${m}m ${s}s`;
+  const deleteTask = (index) => {
+    const updated = [...tasks];
+    updated.splice(index, 1);
+    setTasks(updated);
   };
 
   return (
-    <div className="max-w-xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-4 text-center">Fokusin 🧠</h1>
-      <div className="mb-4 flex flex-col gap-2">
-        <input
-          type="text"
-          placeholder="Nama Tugas"
-          className="border p-2 rounded"
-          value={taskName}
-          onChange={(e) => setTaskName(e.target.value)}
-        />
-        <input
-          type="datetime-local"
-          className="border p-2 rounded"
-          value={deadline}
-          onChange={(e) => setDeadline(e.target.value)}
-        />
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-4xl mx-auto bg-white rounded shadow p-6">
+        <h1 className="text-3xl font-bold text-center mb-6 text-indigo-600">Aplikasi To-Do List</h1>
+
+        {/* Form Input */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <input
+            type="text"
+            placeholder="Masukkan Nama Tugas"
+            className="border border-gray-300 p-2 rounded"
+            value={newTask}
+            onChange={(e) => setNewTask(e.target.value)}
+          />
+
+          <select
+            className="border border-gray-300 p-2 rounded"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+          >
+            <option value="Rendah">Rendah</option>
+            <option value="Sedang">Sedang</option>
+            <option value="Tinggi">Tinggi</option>
+          </select>
+
+          <input
+            type="date"
+            className="border border-gray-300 p-2 rounded"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </div>
+
         <button
           onClick={addTask}
-          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          className="bg-indigo-600 text-white px-6 py-2 rounded w-full mb-6 hover:bg-indigo-700 transition"
         >
-          + Tambah Tugas
+          Tambah Tugas
         </button>
+
+        {/* Tabel Tugas */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full border border-gray-300 rounded overflow-hidden">
+            <thead className="bg-indigo-100">
+              <tr>
+                <th className="border px-4 py-2">No</th>
+                <th className="border px-4 py-2">Nama Tugas</th>
+                <th className="border px-4 py-2">Prioritas</th>
+                <th className="border px-4 py-2">Tanggal</th>
+                <th className="border px-4 py-2">Status</th>
+                <th className="border px-4 py-2">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tasks.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="text-center py-4 text-gray-500">
+                    Belum ada tugas.
+                  </td>
+                </tr>
+              ) : (
+                tasks.map((task, index) => (
+                  <tr key={index} className="bg-white even:bg-gray-50">
+                    <td className="border px-4 py-2 text-center">{index + 1}</td>
+                    <td className="border px-4 py-2">{task.name}</td>
+                    <td className="border px-4 py-2 text-center">{task.priority}</td>
+                    <td className="border px-4 py-2 text-center">{task.date}</td>
+                    <td className="border px-4 py-2 text-center">
+                      {task.done ? "Selesai" : "Belum Selesai"}
+                    </td>
+                    <td className="border px-4 py-2 text-center space-x-2">
+                      <button
+                        onClick={() => toggleDone(index)}
+                        className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                      >
+                        Selesai
+                      </button>
+                      <button
+                        onClick={() => deleteTask(index)}
+                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                      >
+                        Hapus
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-      <ul className="space-y-3">
-        {tasks.map(task => (
-          <li
-            key={task.id}
-            className="border rounded p-3 flex justify-between items-center"
-          >
-            <div>
-              <input
-                type="checkbox"
-                checked={task.completed}
-                onChange={() => toggleComplete(task.id)}
-                className="mr-2"
-              />
-              <span className={task.completed ? "line-through" : ""}>
-                {task.name}
-              </span>
-              <div className="text-sm text-gray-500">{getCountdown(task.deadline)}</div>
-            </div>
-            <button
-              onClick={() => deleteTask(task.id)}
-              className="text-red-500 hover:underline"
-            >
-              Hapus
-            </button>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
